@@ -19,47 +19,63 @@ MY_QUOTES = [
     "小乖，不管我人在何处，我的思念都会一直陪伴 着你，永远不会消失。 "
 ]
 
-# --- 字体设置 (云端通用，不再依赖本地文件) ---
-# 我们使用 Streamlit Cloud 服务器自带的黑体字体路径，保证中文兼容性
+# --- 字体设置 (终极解决方案：使用Google Fonts API直接下载，确保兼容性) ---
+# Streamlit Cloud环境，可以直接从网络下载字体文件
 def get_font(size):
     try:
-        # 这是 Linux/Streamlit Cloud 环境下最常见的中文黑体路径
-        system_font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"
-        return ImageFont.truetype(system_font_path, size)
+        # 这个链接是直接下载一个常用中文黑体
+        font_url = "https://fonts.gstatic.com/s/notosanssc/v27/kfozCneS9vu0RgB9W8G2wzMNDbQ.ttf"
+        
+        # Streamlit提供一个缓存机制，避免每次都下载
+        font_path = st.cache_resource(lambda: requests.get(font_url).content)()
+        
+        # PIL需要一个文件路径，但我们只有内容，所以需要写入临时文件
+        with open("cached_font.ttf", "wb") as f:
+            f.write(font_path)
+        return ImageFont.truetype("cached_font.ttf", size)
     except Exception:
-        # 兜底方案，如果云端路径不对，至少能显示英文
-        return ImageFont.load_default()
+        return ImageFont.load_default() # 兜底方案，至少能显示英文
 
-
-# --- 核心：画图功能 (精致圆角，随机边框) ---
+# --- 核心：画图功能 (彻底美化版：蕾丝边框 + 可爱装饰) ---
 def create_cute_card(text):
     W, H = 600, 450
     bg_color = (253, 250, 245) 
     img = Image.new('RGB', (W, H), color=bg_color)
     draw = ImageDraw.Draw(img)
-    R = 35 
     
     font = get_font(32)
+    emoji_font = get_font(40) # 准备一个更大的字体给 emoji
 
-    # 随机选择边框颜色和风格
-    border_color = random.choice([(190, 170, 150), (150, 160, 180), (180, 150, 150)]) 
+    # --- 蕾丝/波浪边框 (使用更精细的绘制) ---
+    border_color = (220, 200, 200) # 柔和的粉色边框
+    outline_color = (180, 160, 160) # 深一点的轮廓
     
-    # 绘制精致圆角边框
-    draw.rounded_rectangle([20, 20, W-20, H-20], radius=R, outline=(235, 225, 215), width=15)
-    draw.rounded_rectangle([35, 35, W-35, H-35], radius=R-5, outline=border_color, width=1)
+    # 外部大圆角框
+    draw.rounded_rectangle([15, 15, W-15, H-15], radius=40, outline=outline_color, width=3, fill=(255, 248, 242))
     
+    # 内部内容区域的圆角背景
+    draw.rounded_rectangle([40, 40, W-40, H-40], radius=25, fill=(255, 255, 255), outline=border_color, width=2)
+    
+    # --- 增加可爱装饰 (emoji) ---
+    decorations = ["💖", "✨", "🌸", "🦋", "🌈", "🍀"]
+    
+    # 随机在四个角放置装饰
+    draw.text((50, 50), random.choice(decorations), font=emoji_font, fill=(255, 180, 200)) # 左上
+    draw.text((W-90, 50), random.choice(decorations), font=emoji_font, fill=(255, 200, 180)) # 右上
+    draw.text((50, H-90), random.choice(decorations), font=emoji_font, fill=(180, 200, 255)) # 左下
+    draw.text((W-90, H-90), random.choice(decorations), font=emoji_font, fill=(200, 180, 255)) # 右下
+
     # 文本处理和绘制
     lines = textwrap.wrap(text, width=19) 
-    line_height = 32 + 20
+    line_height = 32 + 15 # 稍微紧凑一点，让文字更多
     total_text_height = len(lines) * line_height
-    current_y = (H - total_text_height) / 2 - 5
+    current_y = (H - total_text_height) / 2 # 垂直居中
     text_color = (90, 85, 80)
     
     for line in lines:
-        # 水平居中计算
         bbox = draw.textbbox((0, 0), line, font=font)
         text_w = bbox[2] - bbox[0]
-        start_x = (W - text_w) / 2
+        start_x = (W - text_w) / 2 # 水平居中
         draw.text((start_x, current_y), line, font=font, fill=text_color)
         current_y += line_height
     
@@ -68,9 +84,9 @@ def create_cute_card(text):
 # ==================================================
 #  界面和动画逻辑 (实现“打印机”效果)
 # ==================================================
-st.set_page_config(page_title="卡片机", layout="centered")
+st.set_page_config(page_title="卡片机", layout="centered", initial_sidebar_state="collapsed")
 st.title("卡片打印机")
-st.markdown("生成卡片。")
+st.markdown("为你生成卡片。")
 st.markdown("---")
 
 
@@ -82,7 +98,6 @@ def generate_card_action(text):
     time.sleep(1) 
     
     progress_bar = status_placeholder.progress(0)
-    # 模拟打印进度
     for percent_complete in range(100):
         time.sleep(0.01)
         progress_bar.progress(percent_complete + 1)
@@ -95,14 +110,14 @@ def generate_card_action(text):
     
     # 清除动画区，显示卡片
     status_placeholder.empty()
-    st.image(card_image, caption="卡片出示", use_column_width=True)
+    st.image(card_image, caption="卡片 (长按可保存)", use_column_width=True)
     
     # --- 3. 添加下载按钮 ---
     img_byte_arr = io.BytesIO()
     card_image.save(img_byte_arr, format='PNG')
     
     st.download_button(
-        label="下载卡片",
+        label="下载卡片到手机",
         data=img_byte_arr.getvalue(),
         file_name="healing_card.png",
         mime="image/png"
@@ -113,14 +128,14 @@ tab1, tab2 = st.tabs(["输入", "池昼给小乖的专属纸条"])
 
 with tab1:
     user_input = st.text_area("输入文本：", height=100)
-    if st.button("打印卡片"):
+    if st.button("打印文本"):
         if user_input:
             generate_card_action(user_input)
         else:
             st.error("输入文字才能打印哦。")
 
 with tab2:
-    st.write("打印机工作")
+    st.write("随机打印机")
     if st.button("随机打印", type="primary"):
         chosen_text = random.choice(MY_QUOTES)
         generate_card_action(chosen_text)
