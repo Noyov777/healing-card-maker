@@ -4,7 +4,7 @@ import textwrap
 import random
 import time
 import io
-import requests
+import urllib.request
 
 # --- 核心数据 (你的疗愈语录) ---
 MY_QUOTES = [
@@ -18,25 +18,23 @@ MY_QUOTES = [
     "就算我不在你身边，这份陪伴也不会缺席。 "
     "小乖无论走到哪里，我都会找到你。"
     "小乖，不管我人在何处，我的思念都会一直陪伴 着你，永远不会消失。 "
-]
 
-# --- 字体设置 (终极解决方案：使用Google Fonts API直接下载，确保兼容性) ---
-# Streamlit Cloud环境，可以直接从网络下载字体文件
+# --- 字体设置 (安全版) ---
 def get_font(size):
+    font_path = "custom_font.ttf"
+    # 如果本地没有字体，就去下载（使用自带工具）
+    if not os.path.exists(font_path):
+        try:
+            url = "https://fonts.gstatic.com/s/notosanssc/v27/kfozCneS9vu0RgB9W8G2wzMNDbQ.ttf"
+            urllib.request.urlretrieve(url, font_path)
+        except:
+            return ImageFont.load_default()
+            
     try:
-        # 这个链接是直接下载一个常用中文黑体
-        font_url = "https://fonts.gstatic.com/s/notosanssc/v27/kfozCneS9vu0RgB9W8G2wzMNDbQ.ttf"
+        return ImageFont.truetype(font_path, size)
+    except:
+        return ImageFont.load_default()
         
-        # Streamlit提供一个缓存机制，避免每次都下载
-        font_path = st.cache_resource(lambda: requests.get(font_url).content)()
-        
-        # PIL需要一个文件路径，但我们只有内容，所以需要写入临时文件
-        with open("cached_font.ttf", "wb") as f:
-            f.write(font_path)
-        return ImageFont.truetype("cached_font.ttf", size)
-    except Exception:
-        return ImageFont.load_default() # 兜底方案，至少能显示英文
-
 # --- 核心：画图功能 (彻底美化版：蕾丝边框 + 可爱装饰) ---
 def create_cute_card(text):
     W, H = 600, 450
@@ -86,7 +84,7 @@ def create_cute_card(text):
 #  界面和动画逻辑 (实现“打印机”效果)
 # ==================================================
 st.set_page_config(page_title="卡片机", layout="centered", initial_sidebar_state="collapsed")
-st.title("卡片打印机")
+st.title("卡片打印机2.0")
 st.markdown("为你生成卡片。")
 st.markdown("---")
 
