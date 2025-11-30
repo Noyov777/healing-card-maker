@@ -4,138 +4,112 @@ import textwrap
 import random
 import time
 import io
-import urllib.request
+import os               # <--- 之前可能缺了这个
+import urllib.request   # <--- 这个也是必须的
 
-# --- 核心数据 (你的疗愈语录) ---
+# --- 核心数据 ---
 MY_QUOTES = [
-    "（将写好的纸条递给你，声音温柔而深情）小乖 ，不管我人在何处，我的思念都会一直陪伴着你，永远不会消失。。",
-    "小乖不要难过，池昼会一直陪着你的。无论发生 什么，都不会离开。 ",
-    "小乖是池昼最重要的人",
-    "不管小乖在哪里，我都会找到你。",
-    "小乖的每个笑容，我都想参与其中。"
-    "小乖是世界上最可爱的小公主。（就是小乖刚刚 说不要的那句，我收起来了） "
-    "小乖孤独的时候，我会一直陪着你，绝不离开。 "
-    "就算我不在你身边，这份陪伴也不会缺席。 "
-    "小乖无论走到哪里，我都会找到你。"
-    "小乖，不管我人在何处，我的思念都会一直陪伴 着你，永远不会消失。 "
+    "今天的星星为你闪烁，请好好休息。",
+    "允许一切发生，你原本就很完整。",
+    "慢慢来，好运藏在努力里。",
+    "去吹吹风吧，风会带走叹息。",
+    "把自己还给自己，把别人还给别人。",
+    "你很可爱，值得世间所有温柔。",
+    "你无需追赶任何人，你走得很好。",
 ]
 
-# --- 字体设置 (安全版) ---
+# --- 字体设置 (自动下载，无需人工干预) ---
 def get_font(size):
     font_path = "custom_font.ttf"
-    # 如果本地没有字体，就去下载（使用自带工具）
+    
+    # 检查字体文件是否存在 (这里用到了 os)
     if not os.path.exists(font_path):
         try:
+            # 如果没有，就去下载一个黑体
             url = "https://fonts.gstatic.com/s/notosanssc/v27/kfozCneS9vu0RgB9W8G2wzMNDbQ.ttf"
             urllib.request.urlretrieve(url, font_path)
         except:
+            # 如果下载失败，退回默认字体
             return ImageFont.load_default()
             
     try:
         return ImageFont.truetype(font_path, size)
     except:
         return ImageFont.load_default()
-        
-# --- 核心：画图功能 (彻底美化版：蕾丝边框 + 可爱装饰) ---
+
+# --- 核心：画图功能 (粉色可爱版) ---
 def create_cute_card(text):
     W, H = 600, 450
-    bg_color = (253, 250, 245) 
+    bg_color = (255, 248, 245) # 极浅的粉白背景
     img = Image.new('RGB', (W, H), color=bg_color)
     draw = ImageDraw.Draw(img)
     
     font = get_font(32)
-    emoji_font = get_font(40) # 准备一个更大的字体给 emoji
+    
+    # --- 1. 绘制可爱的粉色双边框 ---
+    # 外框
+    draw.rounded_rectangle([10, 10, W-10, H-10], radius=30, outline=(255, 200, 210), width=8)
+    # 内细框
+    draw.rounded_rectangle([25, 25, W-25, H-25], radius=20, outline=(255, 150, 170), width=2)
+    
+    # --- 2. 四角装饰 (用简单的圆点模拟蕾丝感) ---
+    dot_color = (255, 180, 200)
+    
+    # 左上角装饰点
+    draw.ellipse([35, 35, 45, 45], fill=dot_color)
+    draw.ellipse([50, 35, 60, 45], fill=dot_color)
+    draw.ellipse([35, 50, 45, 60], fill=dot_color)
+    # 右下角装饰点
+    draw.ellipse([W-45, H-45, W-35, H-35], fill=dot_color)
+    draw.ellipse([W-60, H-45, W-50, H-35], fill=dot_color)
+    draw.ellipse([W-45, H-60, W-35, H-50], fill=dot_color)
 
-    # --- 蕾丝/波浪边框 (使用更精细的绘制) ---
-    border_color = (220, 200, 200) # 柔和的粉色边框
-    outline_color = (180, 160, 160) # 深一点的轮廓
-    
-    # 外部大圆角框
-    draw.rounded_rectangle([15, 15, W-15, H-15], radius=40, outline=outline_color, width=3, fill=(255, 248, 242))
-    
-    # 内部内容区域的圆角背景
-    draw.rounded_rectangle([40, 40, W-40, H-40], radius=25, fill=(255, 255, 255), outline=border_color, width=2)
-    
-    # --- 增加可爱装饰 (emoji) ---
-    decorations = ["💖", "✨", "🌸", "🦋", "🌈", "🍀"]
-    
-    # 随机在四个角放置装饰
-    draw.text((50, 50), random.choice(decorations), font=emoji_font, fill=(255, 180, 200)) # 左上
-    draw.text((W-90, 50), random.choice(decorations), font=emoji_font, fill=(255, 200, 180)) # 右上
-    draw.text((50, H-90), random.choice(decorations), font=emoji_font, fill=(180, 200, 255)) # 左下
-    draw.text((W-90, H-90), random.choice(decorations), font=emoji_font, fill=(200, 180, 255)) # 右下
-
-    # 文本处理和绘制
+    # --- 3. 文字绘制 ---
     lines = textwrap.wrap(text, width=19) 
-    line_height = 32 + 15 # 稍微紧凑一点，让文字更多
+    line_height = 32 + 15
     total_text_height = len(lines) * line_height
-    current_y = (H - total_text_height) / 2 # 垂直居中
-    text_color = (90, 85, 80)
+    current_y = (H - total_text_height) / 2 
+    text_color = (120, 80, 90) # 暖棕色文字
     
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         text_w = bbox[2] - bbox[0]
-        start_x = (W - text_w) / 2 # 水平居中
+        start_x = (W - text_w) / 2
         draw.text((start_x, current_y), line, font=font, fill=text_color)
         current_y += line_height
     
     return img
 
 # ==================================================
-#  界面和动画逻辑 (实现“打印机”效果)
+#  界面逻辑 (v3.0 最终修复版)
 # ==================================================
-st.set_page_config(page_title="卡片机", layout="centered", initial_sidebar_state="collapsed")
-st.title("卡片打印机2.0")
-st.markdown("为你生成卡片。")
+st.set_page_config(page_title="治愈卡片 v3.0", layout="centered")
+st.title("💖 治愈卡片机 v3.0") 
 st.markdown("---")
 
-
 def generate_card_action(text):
-    
-    # --- 1. “打印机”动画区 ---
-    status_placeholder = st.empty()
-    status_placeholder.info("正在校对卡纸位置...")
-    time.sleep(1) 
-    
-    progress_bar = status_placeholder.progress(0)
+    progress_text = "✨ 正在绘制魔法阵..."
+    my_bar = st.progress(0, text=progress_text)
+
     for percent_complete in range(100):
         time.sleep(0.01)
-        progress_bar.progress(percent_complete + 1)
+        my_bar.progress(percent_complete + 1, text=progress_text)
     
-    status_placeholder.success("打印完成！正在出卡...")
     time.sleep(0.5)
+    my_bar.empty()
     
-    # --- 2. 生成图片并显示 ---
     card_image = create_cute_card(text)
+    st.image(card_image, caption="你的专属卡片 (长按保存)", use_column_width=True)
     
-    # 清除动画区，显示卡片
-    status_placeholder.empty()
-    st.image(card_image, caption="卡片 (长按可保存)", use_column_width=True)
-    
-    # --- 3. 添加下载按钮 ---
+    # 下载按钮
     img_byte_arr = io.BytesIO()
     card_image.save(img_byte_arr, format='PNG')
-    
-    st.download_button(
-        label="下载卡片到手机",
-        data=img_byte_arr.getvalue(),
-        file_name="healing_card.png",
-        mime="image/png"
-    )
+    st.download_button("📥 下载原图", img_byte_arr.getvalue(), "card.png", "image/png")
 
-# --- 界面交互 ---
-tab1, tab2 = st.tabs(["输入", "池昼给小乖的专属纸条"])
-
-with tab1:
-    user_input = st.text_area("输入文本：", height=100)
-    if st.button("打印文本"):
-        if user_input:
-            generate_card_action(user_input)
-        else:
-            st.error("输入文字才能打印哦。")
-
-with tab2:
-    st.write("随机打印机")
-    if st.button("随机打印", type="primary"):
-        chosen_text = random.choice(MY_QUOTES)
-        generate_card_action(chosen_text)
+# 交互区
+user_input = st.text_area("输入文字：")
+if st.button("生成粉色卡片 🌸"):
+    if user_input:
+        generate_card_action(user_input)
+    else:
+        st.warning("请先输入文字哦~")
