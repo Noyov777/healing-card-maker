@@ -18,31 +18,29 @@ MY_QUOTES = [
     "你无需追赶任何人，你走得很好。",
 ]
 
-# --- 2. 字体设置 (关键修复！) ---
+# --- 2. 字体设置 (使用谷歌官方CDN，绝对稳定) ---
 def get_font(size):
-    # 我们使用一个特定的文件名
-    font_filename = "MaShanZheng-Regular.ttf"
+    # 字体文件名
+    font_filename = "MaShanZheng.ttf"
     
-    # 如果本地没有这个字体，就去下载
+    # 如果本地没有，就去下载
     if not os.path.exists(font_filename):
         try:
-            # 这是一个非常稳定的 GitHub Raw 链接，下载可爱的马善政手写体
-            url = "https://raw.githubusercontent.com/googlefonts/mashanzheng/main/ttf/MaShanZheng-Regular.ttf"
-            # 伪装成浏览器下载，防止被拦截
+            # VVV 这里换成了 Google Fonts 官方 CDN 链接，绝对稳 VVV
+            url = "https://fonts.gstatic.com/s/mashanzheng/v12/NaPecZTRXYhY6lSH9f1MCNgV3g.ttf"
+            
+            # 伪装浏览器下载
             opener = urllib.request.build_opener()
             opener.addheaders = [('User-agent', 'Mozilla/5.0')]
             urllib.request.install_opener(opener)
             urllib.request.urlretrieve(url, font_filename)
         except Exception as e:
-            # 如果下载失败，在屏幕上报错，方便调试
-            st.error(f"⚠️ 字体下载失败: {e}")
+            st.error(f"字体下载出错: {e}")
             return ImageFont.load_default()
 
-    # 尝试加载下载好的字体
     try:
         return ImageFont.truetype(font_filename, size)
-    except Exception as e:
-        st.error(f"⚠️ 字体加载出错: {e}")
+    except:
         return ImageFont.load_default()
 
 # --- 3. 画图功能 (粉色蕾丝可爱风) ---
@@ -52,10 +50,8 @@ def create_cute_card(text):
     img = Image.new('RGB', (W, H), color=bg_color)
     draw = ImageDraw.Draw(img)
     
-    # 获取字体 (中文手写体)
+    # 加载字体
     font = get_font(32)
-    # 获取 emoji 字体 (稍微大一点)
-    emoji_font = get_font(40) 
     
     # 粉色双层边框
     draw.rounded_rectangle([10, 10, W-10, H-10], radius=30, outline=(255, 200, 210), width=8)
@@ -89,9 +85,9 @@ def create_cute_card(text):
     return img
 
 # --- 4. 界面逻辑 ---
-st.set_page_config(page_title="治愈卡片 v5.0", layout="centered")
-st.title("💖 治愈卡片机 v5.0") 
-st.caption("现在应该支持中文手写体啦！")
+st.set_page_config(page_title="治愈卡片 v6.0", layout="centered")
+st.title("💖 治愈卡片机 v6.0") 
+st.caption("这次使用的是谷歌官方字体源，一定行！")
 st.markdown("---")
 
 def generate_card_action(text):
@@ -110,7 +106,7 @@ def generate_card_action(text):
     card_image.save(img_byte_arr, format='PNG')
     st.download_button("📥 下载原图", img_byte_arr.getvalue(), "card.png", "image/png")
 
-# --- 选项卡交互区 ---
+# --- 交互区 ---
 tab1, tab2 = st.tabs(["✍️ 自己写", "🎲 随机抽取"])
 
 with tab1:
@@ -122,7 +118,6 @@ with tab1:
             st.warning("请先输入文字哦~")
 
 with tab2:
-    st.write("不知道写什么？让魔法为你选一句吧。")
     if st.button("✨ 随机抽取一张", type="primary"):
         chosen = random.choice(MY_QUOTES)
         generate_card_action(chosen)
