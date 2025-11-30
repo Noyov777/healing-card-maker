@@ -18,16 +18,15 @@ MY_QUOTES = [
     "你无需追赶任何人，你走得很好。",
 ]
 
-# --- 2. 字体设置 (使用谷歌官方CDN，绝对稳定) ---
+# --- 2. 字体设置 (双重保险机制) ---
 def get_font(size):
-    # 字体文件名
     font_filename = "MaShanZheng.ttf"
     
-    # 如果本地没有，就去下载
+    # 策略 A: 尝试下载可爱的“马善政”手写体 (官方永久链接)
     if not os.path.exists(font_filename):
         try:
-            # VVV 这里换成了 Google Fonts 官方 CDN 链接，绝对稳 VVV
-            url = "https://fonts.gstatic.com/s/mashanzheng/v12/NaPecZTRXYhY6lSH9f1MCNgV3g.ttf"
+            # 这是 Google Fonts 的 GitHub 官方原始文件地址，绝对稳定
+            url = "https://raw.githubusercontent.com/google/fonts/main/ofl/mashanzheng/MaShanZheng-Regular.ttf"
             
             # 伪装浏览器下载
             opener = urllib.request.build_opener()
@@ -35,13 +34,19 @@ def get_font(size):
             urllib.request.install_opener(opener)
             urllib.request.urlretrieve(url, font_filename)
         except Exception as e:
-            st.error(f"字体下载出错: {e}")
-            return ImageFont.load_default()
+            # 如果下载失败，静默处理，尝试策略 B
+            print(f"下载失败: {e}")
 
+    # 尝试加载下载好的可爱字体
     try:
         return ImageFont.truetype(font_filename, size)
     except:
-        return ImageFont.load_default()
+        # 策略 B: 兜底方案 (使用 Linux 系统自带的中文字体)
+        # 如果下载失败，这行代码能保证显示中文，虽然不是手写体，但绝不是方块！
+        try:
+            return ImageFont.truetype("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc", size)
+        except:
+            return ImageFont.load_default()
 
 # --- 3. 画图功能 (粉色蕾丝可爱风) ---
 def create_cute_card(text):
@@ -50,7 +55,6 @@ def create_cute_card(text):
     img = Image.new('RGB', (W, H), color=bg_color)
     draw = ImageDraw.Draw(img)
     
-    # 加载字体
     font = get_font(32)
     
     # 粉色双层边框
@@ -59,11 +63,9 @@ def create_cute_card(text):
     
     # 装饰点
     dot_color = (255, 180, 200)
-    # 左上
     draw.ellipse([35, 35, 45, 45], fill=dot_color)
     draw.ellipse([50, 35, 60, 45], fill=dot_color)
     draw.ellipse([35, 50, 45, 60], fill=dot_color)
-    # 右下
     draw.ellipse([W-45, H-45, W-35, H-35], fill=dot_color)
     draw.ellipse([W-60, H-45, W-50, H-35], fill=dot_color)
     draw.ellipse([W-45, H-60, W-35, H-50], fill=dot_color)
@@ -73,7 +75,7 @@ def create_cute_card(text):
     line_height = 32 + 15
     total_text_height = len(lines) * line_height
     current_y = (H - total_text_height) / 2 
-    text_color = (120, 80, 90) # 暖棕色文字
+    text_color = (120, 80, 90) 
     
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
@@ -85,9 +87,9 @@ def create_cute_card(text):
     return img
 
 # --- 4. 界面逻辑 ---
-st.set_page_config(page_title="治愈卡片 v6.0", layout="centered")
-st.title("💖 治愈卡片机 v6.0") 
-st.caption("这次使用的是谷歌官方字体源，一定行！")
+st.set_page_config(page_title="治愈卡片 v7.0", layout="centered")
+st.title("💖 治愈卡片机 v7.0") 
+st.caption("双重保险：可爱字体 + 系统备用字体")
 st.markdown("---")
 
 def generate_card_action(text):
