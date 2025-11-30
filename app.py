@@ -4,6 +4,7 @@ import textwrap
 import random
 import time
 import io
+import requests
 
 # --- 核心数据 (你的疗愈语录) ---
 MY_QUOTES = [
